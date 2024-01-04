@@ -13,9 +13,9 @@ user.get("/", async (req: Request, res: Response) => {
     const id = res.locals.user_id;
     if (!id) res.status(401).json({ message: "Some parameters are missing" })
     try {
-        const user: any = await User.findById({ id }).exec()
+        const user: any = await User.findById({ _id: id }).select('-password -otp -__v -is_verified').exec()
         if (user.length !== 0) {
-            res.status(201).json(user[0])
+            res.status(201).json(user)
         } else {
             res.status(404).json({ message: "User not found!" })
         }

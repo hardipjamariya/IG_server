@@ -18,7 +18,7 @@ auth.post("/login", async (req: Request, res: Response) => {
         const decryptedPass = await bcrypt.compare(password, user[0].password)
         if (user && decryptedPass) {
             const token = jwt.sign(
-                { user_id: user._id, time: new Date().getTime() },
+                { user_id: user[0]._id, time: new Date().getTime() },
                 process.env.SECRET_KEY_AUTH || '',
                 { expiresIn: '1d' }
             );
