@@ -4,6 +4,8 @@ import cors from 'cors';
 import morgan from 'morgan';
 
 import auth from './routes/Auth'
+import user from './routes/User';
+import post from './routes/Posts'
 
 const app: Express = express();
 const port = 3000;
@@ -19,6 +21,8 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 app.use("/auth", auth)
+app.use("/user", user)
+app.use("/post", post)
 
 mongoose.connect(DB_URI, options).then(() => {
     console.log(`⚡ | Database connection successful`);

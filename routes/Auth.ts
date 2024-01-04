@@ -15,7 +15,8 @@ auth.post("/login", async (req: Request, res: Response) => {
     if (!email || !password) res.status(401).json({ message: "Some parameters are missing" })
     try {
         const user: any = await User.find({ email }).exec();
-        if (user && user.password === password) {
+        const decryptedPass = await bcrypt.compare(password, user[0].password)
+        if (user && decryptedPass) {
             const token = jwt.sign(
                 { user_id: user._id, time: new Date().getTime() },
                 process.env.SECRET_KEY_AUTH || '',
@@ -36,13 +37,18 @@ auth.post("/register", async (req: Request, res: Response) => {
     if (!email || !name || !username || !password) res.status(401).json({ message: "Some parameters are missing" })
     try {
         const user: any = await User.find({ email }).exec();
-        if (!user || !user.is_verfied) {
+        if (user.length === 0) {
             const otp = generateOTP();
-            const newUser = new User({ email, name, username, password, otp })
-            await newUser.save()
-            res.status(201).json({ message: "Verification code has been shared" })
+            const encryptedPass = await bcrypt.hash(password, saltRounds);
+            const newUser = new User({ email, name, username, password: encryptedPass, otp });
+            await newUser.save();
+            return res.status(201).json({ message: "Verification code has been shared" });
+        } else if (user[0].is_verified === false) {
+            const otp = generateOTP();
+            await User.findOneAndUpdate({ email }, { $set: { otp } }).exec();
+            return res.status(201).json({ message: "Verification code has been sent" });
         } else {
-            res.status(404).json({ message: "Email already in use" })
+            return res.status(404).json({ message: "Email already in use" });
         }
     } catch (error) {
         console.log(error)
@@ -55,7 +61,7 @@ auth.post("/verify", async (req: Request, res: Response) => {
     if (!email || !otp) res.status(401).json({ message: "Some parameters are missing" })
     try {
         const user: any = await User.find({ email }).exec();
-        if (user && user.otp === otp) {
+        if (user && user[0].otp === parseInt(otp)) {
             const updateUser = await User.findOneAndUpdate({ email: email }, { $set: { is_verified: true } }, { new: true }).exec()
             const token = jwt.sign(
                 { user_id: user._id, time: new Date().getTime() },
